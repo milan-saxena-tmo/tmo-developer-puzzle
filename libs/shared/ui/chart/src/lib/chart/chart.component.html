@@ -1,5 +1,5 @@
 <google-chart
-  *ngIf="data"
+  *ngIf="chartData && chartData.length > 0; else errMessage"
   [title]="chart.title"
   [type]="chart.type"
   [data]="chartData"
@@ -7,3 +7,4 @@
   [options]="chart.options"
 >
 </google-chart>
+<ng-template #errMessage>Data not available!!</ng-template>
