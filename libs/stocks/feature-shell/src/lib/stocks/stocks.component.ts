@@ -13,6 +13,7 @@ export class StocksComponent implements OnInit {
   period: string;
 
   quotes$ = this.priceQuery.priceQueries$;
+  chartData: any;
 
   timePeriods = [
     { viewValue: 'All available data', value: 'max' },
@@ -32,7 +33,9 @@ export class StocksComponent implements OnInit {
     });
   }
 
-  ngOnInit() {}
+  ngOnInit() {
+    this.quotes$.subscribe(newData => (this.chartData = newData));
+  }
 
   fetchQuote() {
     if (this.stockPickerForm.valid) {
