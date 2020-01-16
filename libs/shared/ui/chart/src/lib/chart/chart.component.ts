@@ -13,8 +13,7 @@ import { Observable } from 'rxjs';
   styleUrls: ['./chart.component.css']
 })
 export class ChartComponent implements OnInit {
-  @Input() data$: Observable<any>;
-  chartData: any;
+  @Input() chartData: any;
 
   chart: {
     title: string;
@@ -33,7 +32,5 @@ export class ChartComponent implements OnInit {
       columnNames: ['period', 'close'],
       options: { title: `Stock price`, width: '600', height: '400' }
     };
-
-    this.data$.subscribe(newData => (this.chartData = newData));
   }
 }

@@ -2,7 +2,7 @@
   <mat-form-field>
     <input
       matInput
-      placeholder="Symbol e.g AAPL"
+      placeholder="Symbol e.g AAPL, FB"
       formControlName="symbol"
       value=""
     />
@@ -29,7 +29,7 @@
     </mat-select>
   </mat-form-field>
 
-  <button (click)="fetchQuote()" mat-raised-button>Go</button>
 </form>
 
-<coding-challenge-chart [data$]="quotes$"></coding-challenge-chart>
+<coding-challenge-chart *ngIf="isValidForm && chartData" [chartData]="chartData"></coding-challenge-chart>
+
