@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { FormBuilder, FormGroup, Validators, FormControl } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { PriceQueryFacade } from '@coding-challenge/stocks/data-access-price-query';
 import { Subject } from 'rxjs';
 import { filter, takeUntil, debounceTime, distinctUntilChanged } from 'rxjs/operators';
@@ -16,8 +16,6 @@ export class StocksComponent implements OnInit, OnDestroy {
   period: string;
   fromDate: Date;
   toDate: Date;
-  fromDateFormatted: string;
-  toDateFormatted: string;
 
   quotes$ = this.priceQuery.priceQueries$;
   private destroyed: Subject<boolean> = new Subject();
@@ -49,32 +47,49 @@ export class StocksComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    // setting default from date as (current date -1 month)
     const defaultFromDate: Date = (new Date());
     defaultFromDate.setMonth(defaultFromDate.getMonth() - 1);
+    // setting default to date as current date
     const defaultToDate: Date = new Date();
 
+    // setting default from and to date on date picker
     this.stockPickerForm.patchValue({
       fromDate: defaultFromDate,
       toDate: defaultToDate
     });
 
+    // below code replace the "Go button" click event to make call
+    // We are checking value change of any form control anding invoking the api only only when
+    // 1. form is valid
+    // 2. user done typing in textbox
+    // 3. checking values are not null or empty (handle from inside fetchQuote())
+    // 4. user enter atleast 2 char in textbox (handle from inside fetchQuote())
     this.stockPickerForm.valueChanges
       .pipe(
-        // debounce input for 400 milliseconds
+        // debounce input for 400 milliseconds for type ahead (make sure user done typing in textbox)
         debounceTime(400),
         // only emit if emission is different from previous emission
         distinctUntilChanged(),
         // checking if form is valid
         filter(() => this.stockPickerForm.valid),
-        // unsubscribe
+        // unsubscribe the object
         takeUntil(this.destroyed))
       .subscribe((status) => this.fetchQuote());
 
+    // handling the api response
+    // if drop down value is other than custom date range then pass the full data to chart
+    // else filter the data from response by selected date range
     this.quotes$.subscribe((newData: any) => {
 
       if (this.period === 'custom' && newData && newData.length > 0) {
+        // change the date format to filter records
+        const fromDateFormatted = moment(this.fromDate).format('YYYY-MM-DD');
+        const toDateFormatted = moment(this.toDate).format('YYYY-MM-DD');
+
+        // filter records if custom date range selected
         this.chartData = newData.filter((x: any) => {
-          return  x[0] >= this.fromDateFormatted &&  x[0] <= this.toDateFormatted
+          return  x[0] >= fromDateFormatted &&  x[0] <= toDateFormatted
         });
       } else {
         this.chartData = newData;
@@ -88,19 +103,21 @@ export class StocksComponent implements OnInit, OnDestroy {
     this.destroyed.complete();
   }
 
+  // Used this method to trigger an action to make the call based on input
   private fetchQuote() {
+    // getting form control values
     const { symbol, period, fromDate, toDate } = this.stockPickerForm.value;
+    // checking user enters atleast 2 char in textbox
     if (symbol !== null && symbol !== undefined && symbol.length >= 2) {
-      this.fromDateFormatted = moment(fromDate).format('YYYY-MM-DD');
-      this.toDateFormatted = moment(toDate).format('YYYY-MM-DD');
 
       let range: string = period;
+      // if custom date range selected then passing the most suitable parameters to get records
+      // because real api doesn't support from date and to date as parameters for date range
       if(period === 'custom') {
         range = this.getRangeFromDateSelection(fromDate);
       }
 
       this.period = period;
-
       this.priceQuery.fetchQuote(symbol, range);
       this.isValidForm = true;
     } else {
@@ -108,6 +125,7 @@ export class StocksComponent implements OnInit, OnDestroy {
     }
   }
 
+  // show hide the date picker based on dropdown value
   onPeriodChange(value: any){
     if (value === 'custom') {
       this.isShowDateRange = true;
@@ -116,6 +134,7 @@ export class StocksComponent implements OnInit, OnDestroy {
     }
   }
 
+  // resetting the value of date-picker if invalid value selected
   onFromDateChange(e: any) {
     const { symbol, period, fromDate, toDate } = this.stockPickerForm.value;
     if(fromDate && toDate && fromDate.getTime() > toDate.getTime()) {
@@ -125,6 +144,8 @@ export class StocksComponent implements OnInit, OnDestroy {
     }
     this.fromDate = fromDate;
   }
+
+  // resetting the value of date-picker if invalid value selected
   onToDateChange(e: any) {
     const { symbol, period, fromDate, toDate } = this.stockPickerForm.value;
     if(fromDate && toDate && fromDate.getTime() > toDate.getTime()) {
@@ -135,6 +156,8 @@ export class StocksComponent implements OnInit, OnDestroy {
     this.toDate = toDate;
   }
 
+  // if custom date range selected then passing the most suitable parameters to get records
+  // because real api doesn't support from date and to date as parameters for date range
   getRangeFromDateSelection(fromDate: Date) : string {
     let range = 'max';
 
@@ -142,6 +165,10 @@ export class StocksComponent implements OnInit, OnDestroy {
     const startDate = moment(fromDate);
     const diffInDays = Math.abs(today.diff(startDate, 'days'));
 
+    // we have only below parameters supported in api to fetch record
+    // for better performance, we are calling only api with suitable date range
+    // e.g we are fetching all records only if date range selected is above 5 years
+    // if needs only last 5 days data then calling api with 1 month parameter (last 30 days data) and then filter last 5 days record
     if(diffInDays > 5 * 365) {
       range = 'max';
     } else if(diffInDays > 2 * 365 ) {
