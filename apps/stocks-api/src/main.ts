@@ -3,20 +3,28 @@
  * This is only a minimal backend to get started.
  **/
 import { Server } from 'hapi';
+import { plugin } from './app/plugins';
 
 const init = async () => {
   const server = new Server({
     port: 3333,
-    host: 'localhost'
+    host: 'localhost',
+    routes: {
+      cors: { //adding cors policy to access the API
+        origin: ["*"],
+        headers: ["Accept", "Content-Type"]
+      }
+    }
   });
 
-  server.route({
-    method: 'GET',
-    path: '/',
-    handler: (request, h) => {
-      return {
-        hello: 'world'
-      };
+  // Registering the plugin of stock api as a config and adding the prefix '/stock'
+  await server.register({
+    plugin: plugin,
+    routes: {
+      prefix: '/stock'
+    },
+    options: {
+      message: 'stock api started'
     }
   });
 

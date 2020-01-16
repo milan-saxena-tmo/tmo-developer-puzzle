@@ -45,6 +45,13 @@ export function priceQueryReducer(
         selectedSymbol: action.symbol
       };
     }
+    case PriceQueryActionTypes.PriceQueryFetchError : {
+      // adding new case to handle api error, e.g in case of 404 error
+      return priceQueryAdapter.addAll(
+        [],
+        state
+      );
+    }
   }
   return state;
 }

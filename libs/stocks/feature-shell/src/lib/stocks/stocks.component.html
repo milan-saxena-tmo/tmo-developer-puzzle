@@ -2,7 +2,7 @@
   <mat-form-field>
     <input
       matInput
-      placeholder="Symbol e.g AAPL"
+      placeholder="Symbol e.g AAPL, FB"
       formControlName="symbol"
       value=""
     />
@@ -19,7 +19,7 @@
 
   <mat-form-field>
     <mat-label>Favorite time period</mat-label>
-    <mat-select formControlName="period">
+    <mat-select formControlName="period" (selectionChange)="onPeriodChange($event.value)">
       <mat-option
         *ngFor="let timePeriod of timePeriods"
         [value]="timePeriod.value"
@@ -29,7 +29,46 @@
     </mat-select>
   </mat-form-field>
 
-  <button (click)="fetchQuote()" mat-raised-button>Go</button>
+  <div *ngIf="isShowDateRange">
+      <mat-form-field>
+        <mat-label>From Date</mat-label>
+        <input matInput
+               [max]="maxDate"
+               [matDatepicker]="fromDatepicker"
+               formControlName="fromDate"
+               (focus)="fromDatepicker.open()"
+               (click)="fromDatepicker.open()"
+               (dateChange)="onFromDateChange($event)"
+               placeholder="Choose From date">
+        <mat-datepicker-toggle matSuffix [for]="fromDatepicker"></mat-datepicker-toggle>
+        <mat-datepicker #fromDatepicker></mat-datepicker>
+        <mat-error>
+          <span *ngIf="!stockPickerForm.get('fromDate').valid && stockPickerForm.get('fromDate').touched">
+            Please select valid from date
+          </span>
+        </mat-error>
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label>To Date</mat-label>
+        <input matInput
+               [max]="maxDate"
+               formControlName="toDate"
+               [matDatepicker]="toDatepicker"
+               (focus)="toDatepicker.open()"
+               (click)="toDatepicker.open()"
+               (dateChange)="onToDateChange($event)"
+               placeholder="Choose To date">
+        <mat-datepicker-toggle matSuffix [for]="toDatepicker"></mat-datepicker-toggle>
+        <mat-datepicker #toDatepicker></mat-datepicker>
+        <mat-error>
+          <span *ngIf="!stockPickerForm.get('toDate').valid && stockPickerForm.get('toDate').touched">
+            Please select valid to date
+          </span>
+        </mat-error>
+      </mat-form-field>
+  </div>
 </form>
 
-<coding-challenge-chart [data$]="quotes$"></coding-challenge-chart>
+<coding-challenge-chart *ngIf="isValidForm && chartData" [chartData]="chartData"></coding-challenge-chart>
+
